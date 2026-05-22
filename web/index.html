@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>انتركم لاسلكي داخلي | Local Intercom</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- PWA Manifest & App Info -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    
+    <!-- Apple Web App Standalone Mode Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="انتركم">
+    <link rel="apple-touch-icon" href="icon.svg">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 1. LOGIN SCREEN -->
+        <div id="login-screen" class="card active">
+            <div class="logo">🎙️</div>
+            <h1>اتصال داخلي لاسلكي</h1>
+            <p class="subtitle">نظام انتركم رقمي مشفر لغرفة التحكم والميدان</p>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="username">الاسم الشخصي</label>
+                    <input type="text" id="username" placeholder="مثال: المصور محمد" required>
+                </div>
+                
+                <div class="input-group">
+                    <label for="user-role">الدور / الوظيفة</label>
+                    <select id="user-role" required>
+                        <option value="Photographer">📷 مصور (Photographer)</option>
+                        <option value="Production">💼 إنتاج (Production)</option>
+                        <option value="Presenter">🎙️ مذيع (Presenter)</option>
+                        <option value="Director" id="director-option" disabled>🎬 مخرج (Director) - متاح محلياً فقط</option>
+                    </select>
+                </div>
+                
+                <div class="input-group" id="pin-group">
+                    <label for="session-pin">الرقم السري للجلسة (PIN)</label>
+                    <input type="text" id="session-pin" placeholder="أدخل رمز 4 أرقام" maxlength="4" required>
+                </div>
+                
+                <!-- 🎙️ REGION: MICROPHONE PRE-AUTHORIZATION & TROUBLESHOOTING -->
+                <div class="permission-zone">
+                    <div id="mic-status-card" class="mic-status-card pending">
+                        <div class="mic-status-header">
+                            <span class="mic-icon">🎙️</span>
+                            <h4>إذن ميكروفون الجوال</h4>
+                            <span id="mic-status-badge" class="mic-badge-lbl">معلق</span>
+                        </div>
+                        <p id="mic-status-desc">الهواتف تتطلب تفعيل صلاحية الميكروفون قبل السماح بالاتصال. يرجى الضغط على زر التفعيل أدناه.</p>
+                        <button type="button" id="btn-request-mic" class="btn-activate-mic">🎙️ اضغط هنا لتفعيل الميكروفون</button>
+                    </div>
+                    
+                    <details class="help-details">
+                        <summary>💡 هل يواجهك بطء تحميل أو مشكلة بالمايك؟</summary>
+                        <div class="help-content">
+                            <ul>
+                                <li><strong>تجاوز تحذير الأمان (SSL):</strong> لأن هذا النظام محلي تماماً وآمن بدون إنترنت، قد يعرض هاتفك تنبيهاً. اضغط على <strong>"خيارات متقدمة / Advanced"</strong> ثم <strong>"متابعة / Proceed"</strong> لتفتحه.</li>
+                                <li><strong>الاتصال بالروتر:</strong> تأكد أن هاتفك متصل بـ <strong>نفس شبكة الواي فاي</strong> الخاصة باللابتوب.</li>
+                                <li><strong>رفضت المايك بالخطأ؟</strong> اضغط على علامة القفل 🔒 بجوار رابط الموقع في الأعلى، واجعل الميكروفون (السماح / Allow) ثم أعد تحميل الصفحة.</li>
+                            </ul>
+                        </div>
+                    </details>
+                </div>
+                
+                <!-- 📲 PWA INSTALLATION BANNER -->
+                <div id="pwa-install-container" class="pwa-install-container hidden">
+                    <button type="button" id="btn-install-pwa" class="btn-install-pwa">📲 تثبيت كـ تطبيق سريع على الهاتف</button>
+                </div>
+                
+                <button type="submit" id="btn-join" class="btn-primary">انضمام للمكالمة الجماعية</button>
+            </form>
+            
+            <div class="localhost-alert" id="localhost-alert">
+                <span>💻 تم اكتشاف تشغيل محلي كـ <strong>مخرج</strong>. يمكنك الدخول للوحة التحكم مباشرة.</span>
+                <button id="btn-director-direct" class="btn-secondary">دخول كـ مخرج</button>
+            </div>
+            
+            <div id="login-error" class="error-msg hidden"></div>
+        </div>
+
+        <!-- 2. CREW CALL SCREEN (OLED Battery Saver UI) -->
+        <div id="crew-screen" class="card hidden">
+            <div class="oled-header">
+                <div class="user-badge">
+                    <span id="crew-display-name">المصور</span>
+                    <span id="crew-display-role" class="badge">مصور</span>
+                </div>
+                <!-- Local connection status -->
+                <div class="local-signal">
+                    <span id="crew-signal-bars" class="signal-icon">📶</span>
+                    <span id="crew-signal-latency">0ms</span>
+                </div>
+            </div>
+            
+            <!-- Large interactive talk button -->
+            <div class="talk-button-container">
+                <button id="btn-mic-toggle" class="btn-talk active-talk">
+                    <span class="icon">🎙️</span>
+                    <span id="mic-status-text">تحدث مباشر</span>
+                </button>
+                <p class="talk-hint">اضغط للحديث أو لكتم الصوت</p>
+            </div>
+
+            <!-- Volume control -->
+            <div class="volume-container">
+                <span class="volume-icon">🔊</span>
+                <input type="range" id="volume-slider" min="0" max="100" value="80" class="vol-slider">
+                <span id="vol-percent">80%</span>
+            </div>
+
+            <!-- Lock prevent notification -->
+            <div class="wakelock-status" id="wakelock-badge">
+                <span class="wakelock-dot green"></span>
+                <span>الشاشة نشطة لمنع انقطاع الصوت (WakeLock)</span>
+            </div>
+            
+            <!-- List of other connected crew -->
+            <div class="active-crew-brief">
+                <h3>المتصلون حالياً في المجموعة:</h3>
+                <div id="crew-active-list" class="crew-tags">
+                    <!-- Dynamic -->
+                </div>
+            </div>
+
+            <button id="btn-crew-disconnect" class="btn-disconnect">قطع الاتصال</button>
+        </div>
+
+        <!-- 3. DIRECTOR CONTROL MATRIX (Laptop Dashboard) -->
+        <div id="director-screen" class="hidden">
+            <header class="director-header">
+                <div class="title-section">
+                    <h1>🎬 لوحة تحكم المخرج المركزية</h1>
+                    <p>نظام الاتصال والربط متعدد الاتجاهات</p>
+                </div>
+                <div class="pin-widget">
+                    <div class="pin-display">
+                        <span class="lbl">رمز الجلسة الميداني:</span>
+                        <span id="director-pin" class="pin">----</span>
+                    </div>
+                    <button id="btn-regen-pin" class="btn-icon" title="توليد رقم سري جديد">🔄</button>
+                </div>
+            </header>
+
+            <div class="director-grid">
+                <!-- Sidebar Controls: Routing and QR Code -->
+                <aside class="dir-sidebar">
+                    <!-- Session Connection QR Code -->
+                    <div class="dir-card qr-card">
+                        <h3>اتصال الطاقم السريع</h3>
+                        <p>اجعل المصورين يمسحون هذا الرمز بكاميرا الجوال للاتصال الفوري بدون كتابة عنوان أو رقم سري:</p>
+                        <div class="qr-container">
+                            <img id="qr-image" src="" alt="QR Code Connection">
+                        </div>
+                        <div class="ip-address-display">
+                            <span class="lbl">رابط الهاتف المباشر:</span>
+                            <code id="server-url-text">https://...</code>
+                        </div>
+                        
+                        <!-- 💡 GUIDE FOR DIRECTOR TO ONBOARD CREW -->
+                        <div class="director-guide-box">
+                            <h4>💡 تعليمات التوصيل الهامة للطاقم:</h4>
+                            <ul>
+                                <li>تأكد أن هاتف المصور متصل بـ <strong>نفس شبكة الواي فاي</strong>.</li>
+                                <li>عند مسح الرمز، سيظهر تحذير أمان ⚠️ (بسبب الشهادة المحلية). اطلب منهم الضغط على <strong>"خيارات متقدمة" (Advanced)</strong> ثم <strong>"متابعة" (Proceed)</strong>.</li>
+                                <li>في صفحة الدخول، اطلب منهم الضغط على زر <strong>"تفعيل الميكروفون"</strong> والسماح بالوصول لكي يعمل الصوت.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Voice Broadcast Routing Panel -->
+                    <div class="dir-card routing-card">
+                        <h3>🎛️ مصفوفة البث وتوجيه الصوت (المخرج يتحدث إلى)</h3>
+                        <div class="routing-presets">
+                            <button id="route-all" class="route-btn active">📢 الجميع (ALL)</button>
+                            <button id="route-cameras" class="route-btn">📷 المصورين فقط</button>
+                            <button id="route-production" class="route-btn">💼 الإنتاج فقط</button>
+                            <button id="route-presenter" class="route-btn">🎙️ المذيع فقط</button>
+                        </div>
+                        
+                        <div class="intercom-policy">
+                            <div class="toggle-control">
+                                <label class="switch">
+                                    <input type="checkbox" id="toggle-hear-each-other">
+                                    <span class="slider round"></span>
+                                </label>
+                                <div class="toggle-lbl">
+                                    <strong>التحدث المتبادل (الجميع يسمع بعضهم)</strong>
+                                    <p>إذا أُغلق، فلن يسمع المصورون بعضهم البعض وسيركزون فقط على المخرج.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Director local mic controller -->
+                        <div class="director-mic-box">
+                            <button id="btn-director-mic" class="btn-primary btn-director-talk active-talk">
+                                🎤 المخرج يتحدث الآن
+                            </button>
+                            <p class="hint">ميكروفون اللابتوب نشط وينقل الصوت للقنوات المحددة أعلاه.</p>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Main Section: Connected Crew Matrix Grid -->
+                <main class="dir-main">
+                    <div class="dir-card main-matrix-card">
+                        <div class="matrix-header">
+                            <h3>👥 طاقم العمل المتصل حالياً (<span id="crew-count">0</span>)</h3>
+                            <div class="matrix-legend">
+                                <span class="leg-item"><span class="dot green"></span> ممتازة</span>
+                                <span class="leg-item"><span class="dot yellow"></span> جيدة</span>
+                                <span class="leg-item"><span class="dot orange"></span> متقطع</span>
+                                <span class="leg-item"><span class="dot red"></span> خارج النطاق</span>
+                            </div>
+                        </div>
+
+                        <div id="crew-matrix-grid" class="matrix-grid">
+                            <!-- Dynamic Cards for Connected Crew members -->
+                            <div class="empty-state">
+                                📭 لا يوجد أي أعضاء متصلين حالياً.
+                                <br>
+                                <span class="sub">شارك الـ QR Code مع الطاقم للبدء.</span>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden audio element or pool for playing back audio dynamically -->
+    <div id="audio-container" style="display:none;"></div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

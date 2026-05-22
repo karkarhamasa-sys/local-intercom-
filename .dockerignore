@@ -1,0 +1,33 @@
+# Exclude build artifacts
+**/build
+**/build/**
+**/out
+**/out/**
+**/*.exe
+**/*.exe~
+**/*.apk
+**/*.aar
+**/*.class
+**/*.log
+**/*.tmp
+
+# Hide IDE and OS files
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Skip Android Studio/Gradle wrapper caches
+**/.gradle
+**/.gradle/**
+**/gradle/wrapper/dists
+**/gradle/wrapper/dists/**
+**/android-client/app/build
+**/android-client/build
+
+# Go build cache and artifacts
+*.test
+**/*.test
+
+# Local environment settings
+local.properties

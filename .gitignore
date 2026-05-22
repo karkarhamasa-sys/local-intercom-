@@ -1,0 +1,27 @@
+# Go binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Android build files
+.gradle/
+**/build/
+local.properties
+.navigation/
+captures/
+*.apk
+*.ap_
+*.oat
+*.odex
+
+# Android Studio / IntelliJ files
+.idea/
+*.iml
+.DS_Store
+.vscode/
+
+# Local configuration
+.env
